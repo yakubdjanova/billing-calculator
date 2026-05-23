@@ -65,6 +65,25 @@
             background: #1d4ed8;
         }
 
+        /* Янги қўшилган тугма стили */
+        .add-btn {
+            background: #10b981;
+            padding: 8px 12px;
+            font-size: 14px;
+            margin-top: 5px;
+            margin-bottom: 15px;
+            display: inline-block;
+            width: auto;
+        }
+
+        .add-btn:hover {
+            background: #059669;
+        }
+
+        .payment-row {
+            margin-bottom: 8px;
+        }
+
         .results {
             margin-top: 20px;
             padding: 15px;
@@ -103,18 +122,17 @@
 
         <div class="form-group" lang="ru">
             <label for="sana">Дата регистрации:</label>
-            <input
-            type="date"
-            id="sana"
-            name="sana"
-            min="2020-01-01"
-            max="2030-12-31"
-        >
+            <input type="date" id="sana" name="sana" min="2020-01-01" max="2030-12-31">
         </div>
 
         <div class="form-group">
             <label>Оплаты:</label>
-            <input type="number" id="p" value="0">
+            <div id="payments-container">
+                <div class="payment-row">
+                    <input type="text" class="payment-input" value="0">
+                </div>
+            </div>
+            <button type="button" class="add-btn" onclick="addPaymentField()">+ Добавить оплату</button>
         </div>
 
         <button onclick="calculate()">Расчитать</button>
@@ -126,82 +144,127 @@
             <div class="result-item"><span>Начисление за период:</span> <b id="res-s">0</b></div>
             <div class="result-item"><span>Оплата за период:</span> <b id="res-p">0</b></div>
             <hr style="border: 0; border-top: 1px solid #e2e8f0;">
-            <div class="result-item" style="font-size: 18px;"><span>Баланс / Долг:</span> <b id="res-debt">0</b></div>
+            <div class="result-item" style="font-size: 18px;"><b>Баланс / Долг:</b> <b id="res-debt">0</b></div>
         </div>
     </div>
 
     <script>
         function checkDays(m, yr) {
-    if ([1, 3, 5, 7, 8, 10, 12].includes(m)) return 31;
-    if (m === 2) {
-        // Kabisa yillarini tekshirish (2024, 2028 yillar uchun 'yr' qiymati 24 va 28 bo'ladi)
-        return (yr === 24 || yr === 28) ? 29 : 28;
-    }
-    return 30;
-}
+            if ([1, 3, 5, 7, 8, 10, 12].includes(m)) return 31;
+            if (m === 2) {
+                return (yr === 24 || yr === 28) ? 29 : 28;
+            }
+            return 30;
+        }
 
-function calculate() {
-    let kvInput = document.getElementById('kv').value.replace(',', '.');
-    let kv = parseFloat(kvInput) || 0;
-    let sanaInput = document.getElementById('sana').value;
-    let p = parseInt(document.getElementById('p').value) || 0;
+        // Янги тўлов майдони қўшиш функцияси
+        function addPaymentField() {
+            const container = document.getElementById('payments-container');
+            const row = document.createElement('div');
+            row.className = 'payment-row';
+            row.innerHTML = '<input type="text" class="payment-input" value="0">';
+            container.appendChild(row);
+            
+            // Янги майдонга фокус бериш ва Enter ҳодисасини қайта созлаш
+            row.querySelector('input').focus();
+            setupEnterNavigation();
+        }
 
-    if (!sanaInput) {
-        alert("Пожалуйста, выберите дату!");
-        return;
-    }
+        function calculate() {
+            let kvInput = document.getElementById('kv').value.replace(',', '.');
+            let kv = parseFloat(kvInput) || 0;
+            
+            let sanaInput = document.getElementById('sana').value;
+            
+            // БАРЧА КИРИТИЛГАН ТЎЛОВЛАРНИ ЙИҒИШ
+            let totalPayments = 0;
+            let paymentInputs = document.querySelectorAll('.payment-input');
+            paymentInputs.forEach(input => {
+                let pInput = input.value.replace(',', '.');
+                totalPayments += parseFloat(pInput) || 0;
+            });
 
-    // Sanadan kun, oy va yilni ajratib olish
-    let dateObj = new Date(sanaInput);
-    let d = dateObj.getDate();
-    let m = dateObj.getMonth() + 1; // JSda oylar 0 dan boshlanadi
-    let yr = dateObj.getFullYear() % 100; // Masalan: 2026 -> 26
+            if (!sanaInput) {
+                alert("Пожалуйста, выведите дату!");
+                return;
+            }
 
-    let frmn1 = kv * 1500;
-    let frmn2 = kv * 2000;
-    let day = 0;
-    let s = 0;
+            let dateObj = new Date(sanaInput);
+            let d = dateObj.getDate();
+            let m = dateObj.getMonth() + 1; 
+            let yr = dateObj.getFullYear() % 100; 
 
-    // Kunlik hisob (countday)
-    let days = checkDays(m, yr);
-    let currentFrmn = (yr < 23 || (yr === 23 && m < 5)) ? frmn1 : frmn2;
-    day = Math.floor((1.0 * currentFrmn / days) * (days - d + 1));
+            let frmn1 = kv * 1500;
+            let frmn2 = kv * 2000;
+            let day = 0;
+            let s = 0;
 
-    // Davriy oylarni hisoblash logikasi (C++ kodi bo'yicha)
-    if (yr === 26) s += frmn2 * (4 - m);
-    else if (yr === 25) s += frmn2 * (4 + 12 - m);
-    else if (yr === 24) s += frmn2 * (4 + 12 + 12 - m);
-    else if (yr === 23) {
-        if (m < 5) s += frmn1 * (4 - m) + frmn2 * (4 + 24 + 8);
-        else s += frmn2 * (4 + 24 + 12 - m);
-    }
-    else if (yr === 22) s += frmn1 * (4 + 12 - m) + frmn2 * (4 + 24 + 8);
-    else s += frmn1 * (4 + 24 - m) + frmn2 * (4 + 24 + 8);
+            let days = checkDays(m, yr);
+            let currentFrmn = (yr < 23 || (yr === 23 && m < 5)) ? frmn1 : frmn2;
+            
+            day = (1.0 * currentFrmn / days) * (days - d + 1);
 
-    s += day;
-    let finalDebt = s - p;
+            if (yr === 26) s += frmn2 * (4 - m);
+            else if (yr === 25) s += frmn2 * (4 + 12 - m);
+            else if (yr === 24) s += frmn2 * (4 + 12 + 12 - m);
+            else if (yr === 23) {
+                if (m < 5) s += frmn1 * (4 - m) + frmn2 * (4 + 24 + 8);
+                else s += frmn2 * (4 + 24 + 12 - m);
+            }
+            else if (yr === 22) s += frmn1 * (4 + 12 - m) + frmn2 * (4 + 24 + 8);
+            else s += frmn1 * (4 + 24 - m) + frmn2 * (4 + 24 + 8);
 
-    // Natijalarni ekranga chiqarish
-    document.getElementById('res-day').innerText = day.toLocaleString();
-document.getElementById('res-frmn1').innerText = frmn1.toLocaleString();
-document.getElementById('res-frmn2').innerText = frmn2.toLocaleString();
-document.getElementById('res-s').innerText = s.toLocaleString();
-    // document.getElementById('res-day').innerText = day.toLocaleString();
-    // document.getElementById('res-frmn1').innerText = frmn1.toLocaleString();
-    // document.getElementById('res-frmn2').innerText = frmn2.toLocaleString();
-    // document.getElementById('res-s').innerText = s.toLocaleString();
-    // document.getElementById('res-p').innerText = p.toLocaleString();
-    
-    let debtEl = document.getElementById('res-debt');
-    debtEl.innerText = finalDebt.toLocaleString() + " so'm";
-    if(finalDebt > 0) {
-        debtEl.className = "debt";
-    } else {
-        debtEl.className = "surplus";
-    }
+            s += day;
+            let finalDebt = s - totalPayments; // умумий тўлов айирилади
 
-    document.getElementById('output').style.display = 'block';
-}
+            // Натижаларни чиқариш
+            document.getElementById('res-day').innerText = day.toLocaleString();
+            document.getElementById('res-frmn1').innerText = frmn1.toLocaleString();
+            document.getElementById('res-frmn2').innerText = frmn2.toLocaleString();
+            document.getElementById('res-s').innerText = s.toLocaleString();
+            document.getElementById('res-p').innerText = totalPayments.toLocaleString(); // Умумий сумма чиқади
+            
+            let debtEl = document.getElementById('res-debt');
+            debtEl.innerText = finalDebt.toLocaleString() + " сум";
+            
+            if(finalDebt > 0) {
+                debtEl.className = "debt";
+            } else {
+                debtEl.className = "surplus";
+            }
+
+            document.getElementById('output').style.display = 'block';
+        }
+
+        // --- ENTER ОРҚАЛИ КЕЙИНГИ КАТАККА ЎТИШНИ СОЗЛАШ ---
+        function setupEnterNavigation() {
+            // Динамик равишда барча мавжуд майдонларни йиғиб оламиз
+            const staticInputs = [
+                document.getElementById('kv'),
+                document.getElementById('sana')
+            ];
+            const dynamicPayments = Array.from(document.querySelectorAll('.payment-input'));
+            const allInputs = staticInputs.concat(dynamicPayments);
+
+            allInputs.forEach((input, index) => {
+                // Эски кузатувчиларни тозалаш (дубликат бўлмаслиги учун)
+                input.onkeydown = null; 
+                
+                input.addEventListener('keydown', function(event) {
+                    if (event.key === 'Enter') {
+                        event.preventDefault(); 
+                        if (index < allInputs.length - 1) {
+                            allInputs[index + 1].focus(); // Кейингисига ўтиш
+                        } else {
+                            calculate(); // Охирги тўлов катакчасида Enter босилса ҳисоблаш
+                        }
+                    }
+                });
+            });
+        }
+
+        // Дастур илк бор юкланганда Enter навигациясини ишга туширамиз
+        setupEnterNavigation();
     </script>
 </body>
 
