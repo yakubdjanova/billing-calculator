@@ -97,8 +97,8 @@
     <div class="card">
         <h2>Калькулятор</h2>
         <div class="form-group">
-            <label>Плошадь (м2):</label>
-            <input type="number" id="kv" value="0" >
+            <label>Площадь (м2):</label>
+            <input type="text" id="kv" value="0">
         </div>
 
         <div class="form-group" lang="ru">
@@ -141,7 +141,8 @@
 }
 
 function calculate() {
-    let kv = parseInt(document.getElementById('kv').value) || 0;
+    let kvInput = document.getElementById('kv').value.replace(',', '.');
+    let kv = parseFloat(kvInput) || 0;
     let sanaInput = document.getElementById('sana').value;
     let p = parseInt(document.getElementById('p').value) || 0;
 
@@ -182,10 +183,14 @@ function calculate() {
 
     // Natijalarni ekranga chiqarish
     document.getElementById('res-day').innerText = day.toLocaleString();
-    document.getElementById('res-frmn1').innerText = frmn1.toLocaleString();
-    document.getElementById('res-frmn2').innerText = frmn2.toLocaleString();
-    document.getElementById('res-s').innerText = s.toLocaleString();
-    document.getElementById('res-p').innerText = p.toLocaleString();
+document.getElementById('res-frmn1').innerText = frmn1.toLocaleString();
+document.getElementById('res-frmn2').innerText = frmn2.toLocaleString();
+document.getElementById('res-s').innerText = s.toLocaleString();
+    // document.getElementById('res-day').innerText = day.toLocaleString();
+    // document.getElementById('res-frmn1').innerText = frmn1.toLocaleString();
+    // document.getElementById('res-frmn2').innerText = frmn2.toLocaleString();
+    // document.getElementById('res-s').innerText = s.toLocaleString();
+    // document.getElementById('res-p').innerText = p.toLocaleString();
     
     let debtEl = document.getElementById('res-debt');
     debtEl.innerText = finalDebt.toLocaleString() + " so'm";
